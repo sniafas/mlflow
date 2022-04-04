@@ -466,10 +466,10 @@ def test_parse_with_schema(pandas_df_with_all_types):
     assert df["bad_float"].dtype == np.float32
     assert all(df["bad_float"] == np.array([1.1, 9007199254740992, 3.3], dtype=np.float32))
     # However bad string is recognized as int64:
-    assert all(df["bad_string"] == np.array([1, 2, 3], dtype=object))
+    assert all(df["bad_string"] == np.array([1, 2, 3], dtype=np.object))
 
     # Boolean is forced - zero and empty string is false, everything else is true:
-    assert df["bad_boolean"].dtype == bool
+    assert df["bad_boolean"].dtype == np.bool
     assert all(df["bad_boolean"] == [True, False, True])
 
 
@@ -537,7 +537,7 @@ def test_serving_model_with_schema(pandas_df_with_all_types):
         )
         response_json = json.loads(response.content)
 
-        # objects are not converted to pandas Strings at the moment
+        # np.objects are not converted to pandas Strings at the moment
         expected_types = {**pandas_df_with_all_types.dtypes, "string": np.dtype(object)}
         assert response_json == [[k, str(v)] for k, v in expected_types.items()]
         response = pyfunc_serve_and_score_model(
@@ -600,11 +600,14 @@ def test_parse_json_input_including_path():
 @pytest.mark.parametrize(
     "args, expected",
     [
-        ({"port": 5000, "host": "0.0.0.0", "nworkers": 4}, "--timeout=60 -b 0.0.0.0:5000 -w 4"),
-        ({"host": "0.0.0.0", "nworkers": 4}, "--timeout=60 -b 0.0.0.0 -w 4"),
-        ({"port": 5000, "nworkers": 4}, "--timeout=60 -w 4"),
-        ({"nworkers": 4}, "--timeout=60 -w 4"),
-        ({}, "--timeout=60"),
+        (
+            {"port": 5000, "host": "0.0.0.0", "nworkers": 4, "timeout": 60},
+            "--timeout=60 -b 0.0.0.0:5000 -w 4",
+        ),
+        ({"host": "0.0.0.0", "nworkers": 4, "timeout": 60}, "--timeout=60 -b 0.0.0.0 -w 4"),
+        ({"port": 5000, "nworkers": 4, "timeout": 60}, "--timeout=60 -w 4"),
+        ({"nworkers": 4, "timeout": 60}, "--timeout=60 -w 4"),
+        ({"timeout": 60}, "--timeout=60"),
     ],
 )
 def test_get_cmd(args: dict, expected: str):
