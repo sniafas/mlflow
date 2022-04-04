@@ -158,6 +158,12 @@ def build_docker(model_uri, name, timeout, install_mlflow, enable_mlserver):
 
         docker run -p 5001:8080 "my-image-name"
 
+    Also we can set an alternative timeout (default: 60) for the scoring server
+
+    .. code:: bash
+
+        docker run -p 5001:8080 -t 120 "my-image-name"
+
     NB: by default, the container will start nginx and gunicorn processes. If you don't need the
     nginx process to be started (for instance if you deploy your container to Google Cloud Run),
     you can disable it via the DISABLE_NGINX environment variable:
