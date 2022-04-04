@@ -64,14 +64,16 @@ class PyFuncBackend(FlavorBackend):
         else:
             scoring_server._predict(local_uri, input_path, output_path, content_type, json_format)
 
-    def serve(self, model_uri, port, host, enable_mlserver):  # pylint: disable=W0221
+    def serve(self, model_uri, port, host, timeout, enable_mlserver):  # pylint: disable=W0221
         """
         Serve pyfunc model locally.
         """
         local_path = _download_artifact_from_uri(model_uri)
 
         server_implementation = mlserver if enable_mlserver else scoring_server
-        command, command_env = server_implementation.get_cmd(local_path, port, host, self._nworkers)
+        command, command_env = server_implementation.get_cmd(
+            local_path, port, host, timeout, self._nworkers
+        )  # pylint: disable=too-many-arguments
 
         if not self._no_conda and ENV in self._config:
             conda_env_path = os.path.join(local_path, self._config[ENV])
@@ -101,7 +103,13 @@ class PyFuncBackend(FlavorBackend):
             return False
 
     def build_image(
-        self, model_uri, image_name, install_mlflow=False, mlflow_home=None, enable_mlserver=False
+        self,
+        model_uri,
+        image_name,
+        timeout,
+        install_mlflow=False,
+        mlflow_home=None,
+        enable_mlserver=False,
     ):
         def copy_model_into_container(dockerfile_context_dir):
             model_cwd = os.path.join(dockerfile_context_dir, "model_dir")
@@ -132,6 +140,7 @@ class PyFuncBackend(FlavorBackend):
         _build_image(
             image_name=image_name,
             mlflow_home=mlflow_home,
+            server_timeout=timeout,
             custom_setup_steps_hook=copy_model_into_container,
             entrypoint=pyfunc_entrypoint,
         )
