@@ -37,6 +37,7 @@ SUPPORTED_FLAVORS = [pyfunc.FLAVOR_NAME, mleap.FLAVOR_NAME]
 
 DISABLE_NGINX = "DISABLE_NGINX"
 ENABLE_MLSERVER = "ENABLE_MLSERVER"
+SERVER_TIMEOUT = "SERVER_TIMEOUT"
 
 SERVING_ENVIRONMENT = "SERVING_ENVIRONMENT"
 
@@ -133,6 +134,7 @@ def _serve_pyfunc(model):
     disable_nginx = os.getenv(DISABLE_NGINX, "false").lower() == "true"
     enable_mlserver = os.getenv(ENABLE_MLSERVER, "false").lower() == "true"
     disable_env_creation = os.environ.get(DISABLE_ENV_CREATION) == "true"
+    timeout = os.environ.get(SERVER_TIMEOUT) == 60
 
     conf = model.flavors[pyfunc.FLAVOR_NAME]
     bash_cmds = []
@@ -171,7 +173,9 @@ def _serve_pyfunc(model):
     # Since MLServer will run without NGINX, expose the server in the `8080`
     # port, which is the assumed "public" port.
     port = DEFAULT_MLSERVER_PORT if enable_mlserver else DEFAULT_INFERENCE_SERVER_PORT
-    cmd, cmd_env = inference_server.get_cmd(model_uri=MODEL_PATH, nworkers=cpu_count, port=port)
+    cmd, cmd_env = inference_server.get_cmd(
+        model_uri=MODEL_PATH, nworkers=cpu_count, port=port, timeout=timeout
+    )
 
     bash_cmds.append(cmd)
     inference_server_process = Popen(["/bin/bash", "-c", " && ".join(bash_cmds)], env=cmd_env)

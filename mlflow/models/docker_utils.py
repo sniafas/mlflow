@@ -33,7 +33,7 @@ RUN curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.s
 RUN bash ./miniconda.sh -b -p /miniconda && rm ./miniconda.sh
 ENV PATH="/miniconda/bin:$PATH"
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-ENV GUNICORN_CMD_ARGS="--timeout 60 -k gevent"
+ENV GUNICORN_CMD_ARGS="--timeout {server_timeout} -k gevent"
 # Set up the program in the image
 WORKDIR /opt/mlflow
 
@@ -77,13 +77,16 @@ def _get_mlflow_install_step(dockerfile_context_dir, mlflow_home):
         ).format(version=mlflow.version.VERSION)
 
 
-def _build_image(image_name, entrypoint, mlflow_home=None, custom_setup_steps_hook=None):
+def _build_image(
+    image_name, entrypoint, server_timeout, mlflow_home=None, custom_setup_steps_hook=None
+):
     """
     Build an MLflow Docker image that can be used to serve a
     The image is built locally and it requires Docker to run.
 
     :param image_name: Docker image name.
     :param entry_point: String containing ENTRYPOINT directive for docker image
+    :param server_timeout: Scoring server timeout
     :param mlflow_home: (Optional) Path to a local copy of the MLflow GitHub repository.
                         If specified, the image will install MLflow from this directory.
                         If None, it will install MLflow from pip.
@@ -99,6 +102,7 @@ def _build_image(image_name, entrypoint, mlflow_home=None, custom_setup_steps_ho
         with open(os.path.join(cwd, "Dockerfile"), "w") as f:
             f.write(
                 _DOCKERFILE_TEMPLATE.format(
+                    server_timeout=server_timeout,
                     install_mlflow=install_mlflow,
                     custom_setup_steps=custom_setup_steps,
                     entrypoint=entrypoint,
